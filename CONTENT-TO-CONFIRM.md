@@ -75,3 +75,10 @@ These come from the brief and are phrased cautiously; confirm the company is com
 ## 9. Not included until real material exists
 
 Testimonials, client logos, case studies, awards, certifications, statistics and years in business — the brief prohibits inventing them. Add them only when real, approved material is available.
+
+## Online payments (Midtrans)
+
+- [ ] Midtrans merchant account approved for PT. Horra Prime Group; production keys set in hosting.
+- [ ] Payment methods to enable (VA banks, QRIS, e-wallets, cards) and who pays the fees.
+- [ ] Payment, refund and cancellation terms added to `/terms`.
+- [ ] Where payment notifications go (`PAYMENT_WEBHOOK_URL`) and who reconciles them.
