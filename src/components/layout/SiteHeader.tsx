@@ -1,13 +1,16 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/Link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FocusEvent, type PointerEvent } from "react";
 import { ArrowRight, ChevronDown, Menu, X } from "lucide-react";
-import { mainNav, type NavItem } from "@/content/navigation";
+import type { NavItem } from "@/content/navigation";
+import { useI18n, fmt } from "@/i18n/client";
+import { stripLocale } from "@/i18n/config";
 import { Container, ButtonLink } from "@/components/ui/primitives";
 import { Wordmark } from "./Wordmark";
 import { MobileNavigation } from "./MobileNavigation";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { cn } from "@/lib/cn";
 
 const isActive = (pathname: string, item: NavItem) => {
@@ -25,8 +28,9 @@ const setPageInert = (inert: boolean) => {
   document.documentElement.style.overflow = inert ? "hidden" : "";
 };
 
-export function SiteHeader() {
-  const pathname = usePathname();
+export function SiteHeader({ nav }: { nav: NavItem[] }) {
+  const pathname = stripLocale(usePathname());
+  const { t } = useI18n();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -106,15 +110,15 @@ export function SiteHeader() {
       <header
         className={cn(
           "sticky top-0 z-50 border-b bg-ivory/95 backdrop-blur-md transition-shadow duration-300 supports-[backdrop-filter]:bg-ivory/90",
-          scrolled ? "border-navy/10 shadow-[0_1px_24px_-12px_rgb(16_36_58/0.35)]" : "border-navy/[0.07]",
+          scrolled ? "border-navy/10 shadow-[0_1px_24px_-12px_rgb(21_43_129/0.35)]" : "border-navy/[0.07]",
         )}
       >
         <Container className="flex h-[72px] items-center justify-between gap-4">
           <Wordmark />
 
-          <nav ref={navRef} aria-label="Main" className="hidden xl:block">
+          <nav ref={navRef} aria-label={t.nav.main} className="hidden xl:block">
             <ul className="flex items-center">
-              {mainNav.map((item) => {
+              {nav.map((item) => {
                 const active = isActive(pathname, item);
                 const linkClass = cn(
                   "relative flex h-[72px] items-center px-2.5 text-[0.875rem] font-medium whitespace-nowrap transition-colors 2xl:px-3 2xl:text-[0.9375rem]",
@@ -162,7 +166,7 @@ export function SiteHeader() {
                         onClick={() => (open ? setOpenMenu(null) : openNow(item.id))}
                         className="mr-0.5 -ml-1 flex size-7 items-center justify-center rounded-[3px] text-ink-soft hover:bg-navy/[0.05] hover:text-navy"
                       >
-                        <span className="sr-only">{`${item.label} menu`}</span>
+                        <span className="sr-only">{fmt(t.nav.submenu, { label: item.label })}</span>
                         <ChevronDown
                           aria-hidden
                           className={cn("size-4 transition-transform duration-200", open && "rotate-180")}
@@ -172,7 +176,7 @@ export function SiteHeader() {
                     <div
                       id={`menu-${item.id}`}
                       hidden={!open}
-                      className="absolute inset-x-0 top-full border-y border-navy/10 bg-ivory shadow-[0_24px_40px_-24px_rgb(16_36_58/0.35)]"
+                      className="absolute inset-x-0 top-full border-y border-navy/10 bg-ivory shadow-[0_24px_40px_-24px_rgb(21_43_129/0.35)]"
                     >
                       <MegaPanel item={item} onNavigate={closeAll} />
                     </div>
@@ -182,10 +186,11 @@ export function SiteHeader() {
             </ul>
           </nav>
 
-          <div className="flex items-center gap-2">
-            <div className="hidden sm:block">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <LanguageSwitcher />
+            <div className="hidden sm:block xl:hidden 2xl:block">
               <ButtonLink href="/contact" size="sm" onClick={closeAll}>
-                Discuss Your Needs
+                {t.nav.discuss}
               </ButtonLink>
             </div>
             <button
@@ -194,21 +199,22 @@ export function SiteHeader() {
               aria-expanded={mobileOpen}
               aria-controls="mobile-nav"
               onClick={toggleMobile}
-              className="flex min-h-11 items-center gap-2 rounded-[3px] px-3 text-[0.9375rem] font-semibold text-navy hover:bg-navy/[0.05] xl:hidden"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[3px] px-2 text-[0.9375rem] font-semibold whitespace-nowrap text-navy hover:bg-navy/[0.05] sm:px-3 xl:hidden"
             >
               {mobileOpen ? <X aria-hidden className="size-5" /> : <Menu aria-hidden className="size-5" />}
-              <span>{mobileOpen ? "Close" : "Menu"}</span>
+              <span className="sr-only sm:not-sr-only">{mobileOpen ? t.nav.close : t.nav.menu}</span>
             </button>
           </div>
         </Container>
       </header>
       {/* Outside <header>: its backdrop-filter would otherwise become the containing block for this fixed panel */}
-      <MobileNavigation open={mobileOpen} pathname={pathname} onNavigate={closeAll} />
+      <MobileNavigation nav={nav} open={mobileOpen} pathname={pathname} onNavigate={closeAll} />
     </>
   );
 }
 
 function MegaPanel({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
+  const { t } = useI18n();
   const groups = item.groups ?? [];
   const single = groups.length === 1;
   return (
@@ -221,7 +227,7 @@ function MegaPanel({ item, onNavigate }: { item: NavItem; onNavigate: () => void
           onClick={onNavigate}
           className="mt-6 inline-flex items-center gap-2 font-semibold text-forest underline-offset-4 hover:underline"
         >
-          {`${item.label} overview`}
+          {fmt(t.nav.overview, { label: item.label })}
           <ArrowRight aria-hidden className="size-4" />
         </Link>
       </div>

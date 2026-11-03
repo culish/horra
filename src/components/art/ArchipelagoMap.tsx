@@ -62,8 +62,8 @@ export function ArchipelagoMap({ className }: { className?: string }) {
     <div className={className}>
       <DotMap
         map={m}
-        land="rgb(169 180 194 / 0.78)"
-        neighbors="rgb(247 245 240 / 0.13)"
+        land="rgb(195 208 240 / 0.78)"
+        neighbors="rgb(246 248 252 / 0.13)"
         dotScale={0.56}
         overlay={overlay}
         className="h-auto w-full animate-map-reveal"

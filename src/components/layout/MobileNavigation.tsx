@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/Link";
 import { ChevronDown } from "lucide-react";
-import { mainNav } from "@/content/navigation";
+import type { NavItem } from "@/content/navigation";
+import { useI18n, fmt } from "@/i18n/client";
 import { Container, ButtonLink } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 
@@ -12,14 +13,17 @@ import { cn } from "@/lib/cn";
  * <details>, which is keyboard accessible without extra script.
  */
 export function MobileNavigation({
+  nav,
   open,
   pathname,
   onNavigate,
 }: {
+  nav: NavItem[];
   open: boolean;
   pathname: string;
   onNavigate: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div
       id="mobile-nav"
@@ -27,9 +31,9 @@ export function MobileNavigation({
       className="fixed inset-x-0 top-[73px] bottom-0 z-40 overflow-y-auto overscroll-contain bg-ivory xl:hidden"
     >
       <Container className="pt-4 pb-12">
-        <nav aria-label="Mobile">
+        <nav aria-label={t.nav.mobile}>
           <ul className="divide-y divide-navy/10 border-b border-navy/10">
-            {mainNav.map((item) => {
+            {nav.map((item) => {
               const current = pathname === item.href;
               if (!item.groups) {
                 return (
@@ -65,7 +69,7 @@ export function MobileNavigation({
                         aria-current={current ? "page" : undefined}
                         className="flex min-h-11 items-center font-semibold text-forest"
                       >
-                        {`${item.label} overview`}
+                        {fmt(t.nav.overview, { label: item.label })}
                       </Link>
                       {item.groups.map((group) => (
                         <div key={group.heading} className="mt-3">
@@ -94,7 +98,7 @@ export function MobileNavigation({
           </ul>
         </nav>
         <ButtonLink href="/contact" onClick={onNavigate} className="mt-8 w-full">
-          Discuss Your Needs
+          {t.nav.discuss}
         </ButtonLink>
       </Container>
     </div>

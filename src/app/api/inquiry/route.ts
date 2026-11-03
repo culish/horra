@@ -1,4 +1,6 @@
 import { getFields, isVariant, validateInquiry, type InquiryValues } from "@/lib/inquiry";
+import { isLocale } from "@/i18n/config";
+import { messages } from "@/i18n/messages";
 
 /**
  * Inquiry endpoint.
@@ -12,6 +14,7 @@ import { getFields, isVariant, validateInquiry, type InquiryValues } from "@/lib
  */
 
 type Body = {
+  locale?: unknown;
   variant?: unknown;
   context?: unknown;
   values?: unknown;
@@ -33,7 +36,11 @@ export async function POST(request: Request) {
 
   const context = typeof body.context === "string" ? body.context.slice(0, 80) : undefined;
   const rawValues = body.values && typeof body.values === "object" ? (body.values as Record<string, unknown>) : {};
+  const locale = isLocale(body.locale) ? body.locale : "en";
+  const t = messages[locale];
+  // Labels in English for the team; validation messages in the visitor's language.
   const fields = getFields(body.variant, context);
+  const localFields = getFields(body.variant, context, t.form, t.trading.products);
 
   const values: InquiryValues = {};
   for (const f of fields) {
@@ -41,7 +48,7 @@ export async function POST(request: Request) {
     if (typeof v === "string") values[f.name] = v.trim();
   }
 
-  const errors = validateInquiry(fields, values);
+  const errors = validateInquiry(localFields, values, t.form.validation);
   if (Object.keys(errors).length) return json({ ok: false, reason: "validation", errors }, 400);
 
   // Honeypot filled in: likely a bot. Respond as accepted without forwarding anything.
@@ -54,6 +61,7 @@ export async function POST(request: Request) {
     source: "horra-prime-group-website",
     variant: body.variant,
     context: context ?? null,
+    language: locale,
     page: typeof body.page === "string" ? body.page.slice(0, 200) : null,
     submittedAt: new Date().toISOString(),
     fields: fields

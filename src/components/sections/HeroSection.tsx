@@ -1,30 +1,30 @@
-import Link from "next/link";
+import Link from "@/components/ui/Link";
 import { ArrowRight } from "lucide-react";
 import { Container, ButtonLink } from "@/components/ui/primitives";
 import { ArchipelagoMap } from "@/components/art/ArchipelagoMap";
-import { divisions } from "@/content/divisions";
+import { getDivisions } from "@/content/divisions";
+import { getT } from "@/i18n/server";
 
-export function HeroSection() {
+export async function HeroSection() {
+  const t = await getT();
+  const divisions = getDivisions(t);
   return (
     <section aria-labelledby="hero-title" data-surface="dark" className="relative overflow-hidden bg-navy text-ivory">
       <Container className="relative pt-14 sm:pt-20 lg:pt-24">
-        <p className="text-[0.9375rem] font-medium text-mist">PT. Horra Prime Group</p>
+        <p className="text-[0.9375rem] font-medium text-mist">{t.hero.company}</p>
         <h1 id="hero-title" className="mt-5 max-w-[62rem] text-display font-semibold text-balance">
-          Your Trusted Partner for Business, Trade &amp; Travel in Indonesia
+          {t.hero.title}
         </h1>
 
         <div className="mt-10 grid items-start gap-10 lg:mt-14 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-4 lg:pt-4">
-            <p className="max-w-[30rem] text-lead text-mist">
-              Integrated business consulting, international trading, and travel assistance designed to connect
-              opportunities across Indonesia and global markets.
-            </p>
+            <p className="max-w-[30rem] text-lead text-mist">{t.hero.lead}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <ButtonLink href="#divisions" variant="accent">
-                Explore Our Services
+                {t.common.exploreOurServices}
               </ButtonLink>
               <ButtonLink href="/contact" variant="outline-light">
-                Contact Our Team
+                {t.common.contactOurTeam}
               </ButtonLink>
             </div>
           </div>
@@ -47,7 +47,7 @@ export function HeroSection() {
                         .slice(0, 2)
                         .map((s) => s.label)
                         .join(", ")}
-                      {d.services.length > 2 ? " and more" : ""}
+                      {d.services.length > 2 ? t.common.andMore : ""}
                     </span>
                   </span>
                   <ArrowRight

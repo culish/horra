@@ -5,6 +5,7 @@ import { RegionMap } from "@/components/art/RegionMap";
 import { KawungPattern } from "@/components/art/KawungPattern";
 import type { DivisionKey } from "@/content/divisions";
 import { cn } from "@/lib/cn";
+import { getT } from "@/i18n/server";
 
 /* ------------------------------------------------------------------ PageHero (inner pages) */
 
@@ -34,7 +35,7 @@ export function PageHero({
           aria-hidden
           className="pointer-events-none absolute -right-24 bottom-[-12%] hidden w-[54%] max-w-[760px] opacity-[0.55] lg:block"
         >
-          <RegionMap division={division} land="rgb(16 36 58 / 0.2)" neighbors="rgb(16 36 58 / 0.07)" />
+          <RegionMap division={division} land="rgb(21 43 129 / 0.18)" neighbors="rgb(21 43 129 / 0.07)" />
         </div>
       )}
       <Container className="relative pt-10 pb-16 md:pt-14 md:pb-24">
@@ -55,7 +56,7 @@ export function PageHero({
 
 /* ------------------------------------------------------------------ ProcessSteps */
 
-export function ProcessSteps({
+export async function ProcessSteps({
   steps,
   note,
   layout = "row",
@@ -68,6 +69,7 @@ export function ProcessSteps({
   tone?: "light" | "dark";
   className?: string;
 }) {
+  const t = await getT();
   const dark = tone === "dark";
   const row = layout === "row";
   return (
@@ -103,7 +105,7 @@ export function ProcessSteps({
             </span>
             <div className={row ? "mt-5" : "pt-1.5"}>
               <h3 className={cn("font-semibold tracking-[-0.01em]", dark ? "text-ivory" : "text-navy")}>
-                <span className="sr-only">Step {i + 1}: </span>
+                <span className="sr-only">{`${t.common.step} ${i + 1}: `}</span>
                 {step.title}
               </h3>
               <p className={cn("mt-2 text-[0.9375rem] leading-relaxed", dark ? "text-mist" : "text-ink-soft")}>

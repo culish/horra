@@ -1,28 +1,31 @@
 import { Clock, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { siteConfig, whatsappHref } from "@/config/site";
 import { cn } from "@/lib/cn";
+import { getT } from "@/i18n/server";
 
 /**
  * Contact details from configuration. Unverified details show a labelled placeholder
  * and never a working link (see README → Environment).
  */
-export function ContactDetails({ tone = "light", className }: { tone?: "light" | "dark"; className?: string }) {
+export async function ContactDetails({ tone = "light", className }: { tone?: "light" | "dark"; className?: string }) {
+  const t = await getT();
+  const c = t.nav.contact;
   const { email, phone, address, hours } = siteConfig.contact;
-  const wa = whatsappHref("Hello Horra Prime Group, I would like to ask about your services.");
+  const wa = whatsappHref(c.greeting);
   const dark = tone === "dark";
 
   const rows = [
-    { icon: Mail, label: "Email", value: email, href: email ? `mailto:${email}` : undefined },
-    { icon: Phone, label: "Phone", value: phone, href: phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined },
-    { icon: MessageCircle, label: "WhatsApp", value: wa ? `+${siteConfig.contact.whatsapp}` : undefined, href: wa },
-    { icon: MapPin, label: "Office", value: address },
-    { icon: Clock, label: "Hours", value: hours },
+    { key: "email", icon: Mail, label: c.email, value: email, href: email ? `mailto:${email}` : undefined },
+    { key: "phone", icon: Phone, label: c.phone, value: phone, href: phone ? `tel:${phone.replace(/[^\d+]/g, "")}` : undefined },
+    { key: "whatsapp", icon: MessageCircle, label: c.whatsapp, value: wa ? `+${siteConfig.contact.whatsapp}` : undefined, href: wa },
+    { key: "office", icon: MapPin, label: c.office, value: address, href: undefined },
+    { key: "hours", icon: Clock, label: c.hours, value: hours, href: undefined },
   ];
 
   return (
     <dl className={cn("space-y-4", className)}>
-      {rows.map(({ icon: Icon, label, value, href }) => (
-        <div key={label} className="flex gap-3.5">
+      {rows.map(({ key, icon: Icon, label, value, href }) => (
+        <div key={key} className="flex gap-3.5">
           <Icon
             aria-hidden
             strokeWidth={1.6}
@@ -36,7 +39,7 @@ export function ContactDetails({ tone = "light", className }: { tone?: "light" |
                   <a
                     href={href}
                     className="font-medium underline decoration-current/30 underline-offset-4 hover:decoration-current"
-                    {...(label === "WhatsApp" ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    {...(key === "whatsapp" ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   >
                     {value}
                   </a>
@@ -44,7 +47,7 @@ export function ContactDetails({ tone = "light", className }: { tone?: "light" |
                   <span className="whitespace-pre-line">{value}</span>
                 )
               ) : (
-                <span className={cn("italic", dark ? "text-mist/80" : "text-stone")}>To be confirmed</span>
+                <span className={cn("italic", dark ? "text-mist/80" : "text-stone")}>{t.common.toBeConfirmed}</span>
               )}
             </dd>
           </div>

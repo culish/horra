@@ -17,11 +17,6 @@ export const siteConfig = {
   legalName: "PT. Horra Prime Group",
   name: "Horra Prime Group",
   url: value(process.env.NEXT_PUBLIC_SITE_URL) ?? "http://localhost:3000",
-  title: "PT. Horra Prime Group | Business, Trade & Travel in Indonesia",
-  description:
-    "Explore business consulting, visa and immigration assistance, international trading, and travel services from PT. Horra Prime Group in Indonesia.",
-  shortDescription:
-    "An Indonesian company working across business consulting, international trading, and tours and travel.",
   contact: {
     email: value(process.env.NEXT_PUBLIC_CONTACT_EMAIL),
     phone: value(process.env.NEXT_PUBLIC_CONTACT_PHONE),

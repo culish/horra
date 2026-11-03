@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/ui/Link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
@@ -22,7 +22,7 @@ const buttonSizes = {
 
 const buttonVariants: Record<ButtonVariant, string> = {
   primary: "bg-navy text-ivory hover:bg-navy-soft",
-  accent: "bg-gold text-navy hover:bg-[#d4b77f]",
+  accent: "bg-gold text-navy hover:bg-[#6cc9ff]",
   outline: "border border-navy/25 text-navy hover:border-navy hover:bg-navy/[0.03]",
   "outline-light": "border border-ivory/35 text-ivory hover:border-ivory hover:bg-ivory/[0.06]",
 };

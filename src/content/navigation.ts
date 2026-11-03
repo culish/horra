@@ -1,3 +1,5 @@
+import type { Messages } from "@/i18n/messages";
+import { fmt } from "@/lib/fmt";
 import { tradingCategories, productCount } from "./trading";
 
 export type NavLink = { label: string; href: string; note?: string };
@@ -10,68 +12,72 @@ export type NavItem = {
   groups?: NavGroup[];
 };
 
-export const mainNav: NavItem[] = [
-  { id: "home", label: "Home", href: "/" },
-  { id: "about", label: "About", href: "/about" },
-  {
-    id: "consulting",
-    label: "Business Consulting",
-    href: "/business-consulting",
-    intro: "Visas, stay permits and company setup for people and businesses coming to Indonesia.",
-    groups: [
-      {
-        heading: "Visa & Immigration",
-        href: "/visa-immigration",
-        links: [
-          { label: "Visa & Immigration overview", href: "/visa-immigration" },
-          { label: "C1 Tourist Visa", href: "/visa-immigration/c1-tourist-visa" },
-          { label: "Investor KITAS", href: "/visa-immigration/investor-kitas" },
-        ],
-      },
-      {
-        heading: "Business Setup",
-        href: "/business-setup",
-        links: [
-          { label: "PT PMA Setup", href: "/business-setup#pt-pma" },
-          { label: "Local PT Setup", href: "/business-setup#local-pt" },
-          { label: "NIB & OSS", href: "/business-setup#nib-oss" },
-          { label: "Virtual Office", href: "/business-setup#virtual-office" },
-        ],
-      },
-    ],
-  },
-  {
-    id: "trading",
-    label: "International Trading",
-    href: "/international-trading",
-    intro: "Buyer inquiries for Indonesian commodities. Terms are confirmed for each inquiry.",
-    groups: [
-      {
-        heading: "Product categories",
-        links: tradingCategories.map((c) => ({
-          label: c.name,
-          href: `/international-trading/${c.slug}`,
-          note: productCount(c) ? `${productCount(c)} products listed` : "Range on request",
-        })),
-      },
-    ],
-  },
-  {
-    id: "travel",
-    label: "Tours & Travel",
-    href: "/tours-travel",
-    intro: "Tickets, hotels, tours, transfers and guidance for trips in Indonesia.",
-    groups: [
-      {
-        heading: "Services",
-        links: [
-          { label: "Ticket & Hotel", href: "/tours-travel#ticket-hotel" },
-          { label: "Tour Package", href: "/tours-travel#tour-package" },
-          { label: "Airport Drop & Pick Up", href: "/tours-travel#airport-transfer" },
-          { label: "Travel Guide", href: "/tours-travel#travel-guide" },
-        ],
-      },
-    ],
-  },
-  { id: "contact", label: "Contact", href: "/contact" },
-];
+export function getMainNav(t: Messages): NavItem[] {
+  const n = t.nav;
+  return [
+    { id: "home", label: n.items.home, href: "/" },
+    { id: "about", label: n.items.about, href: "/about" },
+    {
+      id: "consulting",
+      label: n.items.consulting,
+      href: "/business-consulting",
+      intro: n.intros.consulting,
+      groups: [
+        {
+          heading: n.groups.visa,
+          href: "/visa-immigration",
+          links: [
+            { label: n.links.visaOverview, href: "/visa-immigration" },
+            { label: n.links.visaApply, href: "/visa-immigration/apply" },
+            { label: n.links.c1, href: "/visa-immigration/c1-tourist-visa" },
+            { label: n.links.kitas, href: "/visa-immigration/investor-kitas" },
+          ],
+        },
+        {
+          heading: n.groups.setup,
+          href: "/business-setup",
+          links: [
+            { label: n.links.ptPma, href: "/business-setup#pt-pma" },
+            { label: n.links.localPt, href: "/business-setup#local-pt" },
+            { label: n.links.nibOss, href: "/business-setup#nib-oss" },
+            { label: n.links.virtualOffice, href: "/business-setup#virtual-office" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "trading",
+      label: n.items.trading,
+      href: "/international-trading",
+      intro: n.intros.trading,
+      groups: [
+        {
+          heading: n.groups.categories,
+          links: tradingCategories.map((c) => ({
+            label: t.trading.categories[c.slug].name,
+            href: `/international-trading/${c.slug}`,
+            note: productCount(c) ? fmt(n.links.productsListed, { count: productCount(c) }) : n.links.rangeOnRequest,
+          })),
+        },
+      ],
+    },
+    {
+      id: "travel",
+      label: n.items.travel,
+      href: "/tours-travel",
+      intro: n.intros.travel,
+      groups: [
+        {
+          heading: n.groups.services,
+          links: [
+            { label: n.links.ticketHotel, href: "/tours-travel#ticket-hotel" },
+            { label: n.links.tourPackage, href: "/tours-travel#tour-package" },
+            { label: n.links.airport, href: "/tours-travel#airport-transfer" },
+            { label: n.links.guide, href: "/tours-travel#travel-guide" },
+          ],
+        },
+      ],
+    },
+    { id: "contact", label: n.items.contact, href: "/contact" },
+  ];
+}

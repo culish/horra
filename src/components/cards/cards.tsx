@@ -1,9 +1,11 @@
-import Link from "next/link";
+import Link from "@/components/ui/Link";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight } from "lucide-react";
 import type { Division } from "@/content/divisions";
 import type { TradingCategory } from "@/content/trading";
 import { productCount } from "@/content/trading";
+import { getT } from "@/i18n/server";
+import { fmt } from "@/lib/fmt";
 import { RegionMap, regionTones } from "@/components/art/RegionMap";
 import { MediaFrame } from "@/components/art/MediaFrame";
 import { categoryIcons } from "@/components/ui/icons";
@@ -11,7 +13,14 @@ import { cn } from "@/lib/cn";
 
 /* ------------------------------------------------------------------ DivisionCard */
 
-export function DivisionCard({ division, headingLevel = "h3" }: { division: Division; headingLevel?: "h2" | "h3" }) {
+export async function DivisionCard({
+  division,
+  headingLevel = "h3",
+}: {
+  division: Division;
+  headingLevel?: "h2" | "h3";
+}) {
+  const t = await getT();
   const Heading = headingLevel;
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-[6px] border border-navy/10 bg-white">
@@ -25,7 +34,7 @@ export function DivisionCard({ division, headingLevel = "h3" }: { division: Divi
           </Link>
         </Heading>
         <p className="mt-3 leading-relaxed text-ink-soft">{division.summary}</p>
-        <ul className="mt-5 flex flex-wrap gap-2" aria-label={`${division.name} services`}>
+        <ul className="mt-5 flex flex-wrap gap-2" aria-label={fmt(t.common.servicesOf, { name: division.name })}>
           {division.services.map((s) => (
             <li key={s.label} className="rounded-full border border-navy/12 px-3 py-1 text-sm text-ink-soft">
               {s.label}
@@ -33,7 +42,7 @@ export function DivisionCard({ division, headingLevel = "h3" }: { division: Divi
           ))}
         </ul>
         <span className="mt-auto flex items-center gap-2 pt-8 text-[0.9375rem] font-semibold text-forest">
-          Explore division
+          {t.common.explore}
           <ArrowRight aria-hidden className="size-4 transition-transform duration-200 group-hover:translate-x-1" />
         </span>
       </div>
@@ -43,12 +52,12 @@ export function DivisionCard({ division, headingLevel = "h3" }: { division: Divi
 
 /* ------------------------------------------------------------------ ServiceCard */
 
-export function ServiceCard({
+export async function ServiceCard({
   icon: Icon,
   title,
   text,
   href,
-  linkLabel = "Learn more",
+  linkLabel,
   id,
   headingLevel = "h3",
   tone = "light",
@@ -64,6 +73,7 @@ export function ServiceCard({
 }) {
   const Heading = headingLevel;
   const dark = tone === "dark";
+  const label = linkLabel ?? (await getT()).common.learnMore;
   return (
     <article
       id={id}
@@ -82,7 +92,7 @@ export function ServiceCard({
       <p className={cn("mt-2.5 leading-relaxed", dark ? "text-mist" : "text-ink-soft")}>{text}</p>
       {href && (
         <span aria-hidden className={cn("mt-4 text-sm font-semibold", dark ? "text-gold" : "text-forest")}>
-          {linkLabel}
+          {label}
         </span>
       )}
     </article>
@@ -91,7 +101,9 @@ export function ServiceCard({
 
 /* ------------------------------------------------------------------ ProductCategoryCard */
 
-export function ProductCategoryCard({ category }: { category: TradingCategory }) {
+export async function ProductCategoryCard({ category }: { category: TradingCategory }) {
+  const t = await getT();
+  const copy = t.trading.categories[category.slug];
   const Icon = categoryIcons[category.icon];
   const count = productCount(category);
   return (
@@ -101,12 +113,12 @@ export function ProductCategoryCard({ category }: { category: TradingCategory })
       </span>
       <h3 className="mt-6 text-lg font-semibold tracking-[-0.01em] text-navy">
         <Link href={`/international-trading/${category.slug}`} className="after:absolute after:inset-0">
-          {category.name}
+          {copy.name}
         </Link>
       </h3>
-      <p className="mt-2 mb-6 text-[0.9375rem] leading-relaxed text-ink-soft">{category.summary}</p>
+      <p className="mt-2 mb-6 text-[0.9375rem] leading-relaxed text-ink-soft">{copy.summary}</p>
       <p className="mt-auto flex items-center justify-between gap-3 border-t border-navy/10 pt-4 text-sm text-stone">
-        <span>{count ? `${count} products listed` : "Range on request"}</span>
+        <span>{count ? fmt(t.nav.links.productsListed, { count }) : t.nav.links.rangeOnRequest}</span>
         <ArrowRight
           aria-hidden
           className="size-4 text-forest transition-transform duration-200 group-hover:translate-x-1"
