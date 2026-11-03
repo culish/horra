@@ -6,7 +6,7 @@ Everything below is either missing from the company profile or needs professiona
 
 | Item | Where it appears | How to supply |
 | --- | --- | --- |
-| Official logo and brand guidelines | Header, footer, favicon, share image | Replace `Wordmark.tsx`, `src/app/icon.svg`, `src/app/opengraph-image.png` |
+| Brand guidelines and share image | Share image (logos are now in `src/assets/logo/`) | Replace `src/app/opengraph-image.png` |
 | Official email | Contact page, footer, privacy policy | `NEXT_PUBLIC_CONTACT_EMAIL` |
 | Official phone | Contact page, footer | `NEXT_PUBLIC_CONTACT_PHONE` |
 | Official WhatsApp number | Contact page, footer, WhatsApp button | `NEXT_PUBLIC_WHATSAPP_NUMBER` |

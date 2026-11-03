@@ -14,6 +14,7 @@ export function PageHero({
   lead,
   division,
   label,
+  logo,
   children,
 }: {
   crumbs: Crumb[];
@@ -22,6 +23,8 @@ export function PageHero({
   division?: DivisionKey;
   /** Short context line above the title, e.g. the division a page belongs to */
   label?: string;
+  /** Division logo shown above the title */
+  logo?: ReactNode;
   children?: ReactNode;
 }) {
   return (
@@ -37,6 +40,7 @@ export function PageHero({
       <Container className="relative pt-10 pb-16 md:pt-14 md:pb-24">
         <Breadcrumbs items={crumbs} />
         <div className="mt-10 max-w-[46rem] md:mt-16">
+          {logo && <div className="mb-8">{logo}</div>}
           {label && <p className="mb-4 text-[0.9375rem] font-semibold text-forest">{label}</p>}
           <h1 id="page-title" className="text-display font-semibold text-balance text-navy">
             {title}
