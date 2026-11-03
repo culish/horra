@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { pageMetadata } from "@/lib/metadata";
 import { travelProcess, travelServices } from "@/content/travel";
 import { PageHero, ProcessSteps, CTASection } from "@/components/sections/sections";
@@ -5,6 +6,7 @@ import { ButtonLink, Container, Section, SectionHeader } from "@/components/ui/p
 import { DisclaimerNotice } from "@/components/ui/notices";
 import { travelIcons } from "@/components/ui/icons";
 import { InquiryForm } from "@/components/forms/InquiryForm";
+import travelLogo from "@/assets/logo/horra-travel.png";
 
 export const metadata = pageMetadata({
   title: "Tours & Travel",
@@ -18,6 +20,15 @@ export default function ToursTravelPage() {
     <>
       <PageHero
         division="travel"
+        logo={
+          <Image
+            src={travelLogo}
+            alt="Horra – Global Visa & Business Solutions"
+            priority
+            className="h-14 w-auto sm:h-16"
+            sizes="240px"
+          />
+        }
         crumbs={[{ label: "Home", href: "/" }, { label: "Tours & Travel" }]}
         title="Tours & Travel"
         lead="Tickets, hotels, tour packages, airport transfers and travel guidance — arranged around your plans, whether you are here for business or leisure."
