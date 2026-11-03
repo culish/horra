@@ -21,7 +21,8 @@ npm run dev                  # http://localhost:3000
 | Script              | What it does                                              |
 | ------------------- | --------------------------------------------------------- |
 | `npm run dev`       | Development server with hot reload                        |
-| `npm run build`     | Production build (prerenders all pages)                   |
+| `npm run build`     | Production build with webpack (prerenders all pages)      |
+| `npm run build:turbopack` | Same build with Turbopack (faster, needs a host that lets Node spawn workers) |
 | `npm start`         | Serve the production build                                |
 | `npm run lint`      | ESLint (Next.js core-web-vitals + TypeScript rules)       |
 | `npm run typecheck` | Generates route types, then runs `tsc --noEmit`           |
@@ -31,7 +32,8 @@ npm run dev                  # http://localhost:3000
 ### Deploying
 
 - **Vercel** (simplest): import the repository, set the environment variables, deploy. No extra configuration.
-- **Any Node host**: `npm ci && npm run build && npm start` (set `PORT` if needed).
+- **Any Node host**: `npm ci && npm run build && npm start` (set `PORT` if needed). Requires Node.js 20.9 or newer.
+- **Hostinger (Node.js web app)**: pick Node.js 22 (or 20), build command `npm run build`, start command `npm start`, and deploy from GitHub or a fresh upload of the repository (never upload a local `.next` or `node_modules` folder). The default build uses webpack because Turbopack runs CSS loaders in separate Node worker processes, which Hostinger's sandboxed Node runtime kills before they connect.
 
 Set `NEXT_PUBLIC_SITE_URL` to the real domain in production — canonical URLs, Open Graph tags, `sitemap.xml` and `robots.txt` are built from it.
 
