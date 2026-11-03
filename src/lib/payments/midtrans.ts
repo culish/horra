@@ -61,7 +61,7 @@ export type TxStatus = {
   transactionId?: string;
   transactionTime?: string;
   settlementTime?: string;
-  custom?: { invoice?: string; linkId?: string };
+  custom?: { invoice?: string; linkId?: string; kind?: string };
 };
 
 /** Looks up a transaction. Returns null when Midtrans has no transaction with this order id. */
@@ -83,6 +83,7 @@ export async function getStatus(orderId: string): Promise<TxStatus | null> {
     custom: {
       invoice: body.custom_field1 ? String(body.custom_field1) : undefined,
       linkId: body.custom_field2 ? String(body.custom_field2) : undefined,
+      kind: body.custom_field3 ? String(body.custom_field3) : undefined,
     },
   };
 }
@@ -92,35 +93,35 @@ export const isPaid = (s: Pick<TxStatus, "transactionStatus" | "fraudStatus">) =
   (s.transactionStatus === "settlement" || s.transactionStatus === "capture") &&
   (!s.fraudStatus || s.fraudStatus === "accept");
 
-/** Creates a Snap transaction. Throws with `code: "order_id_taken"` if the order id was used before. */
-export async function createSnap({
-  link,
-  linkId,
-  orderId,
-  finishUrl,
-}: {
-  link: PaymentLink;
-  linkId: string;
+export type SnapRequest = {
   orderId: string;
+  amount: number;
+  item: { id: string; name: string };
+  customer: { name: string; email?: string; phone?: string };
   finishUrl: string;
-}): Promise<{ token: string; redirectUrl: string }> {
-  const [first, ...rest] = link.customerName.split(/\s+/);
-  const minutesLeft = Math.max(60, Math.min(60 * 24 * 7, Math.floor((link.expiresAt * 1000 - Date.now()) / 60_000)));
+  /** How long the customer has to complete a payment started from this checkout (e.g. a VA transfer). */
+  expiryMinutes: number;
+  /** Shown in the Midtrans dashboard and returned in notifications. Max 255 characters each. */
+  custom?: [string?, string?, string?];
+};
 
+/** Creates a Snap transaction. Throws with `code: "order_id_taken"` if the order id was used before. */
+export async function createSnapTransaction(r: SnapRequest): Promise<{ token: string; redirectUrl: string }> {
+  const [first, ...rest] = r.customer.name.trim().split(/\s+/);
   const payload = {
-    transaction_details: { order_id: orderId, gross_amount: link.amount },
-    item_details: [{ id: link.invoice, name: link.description.slice(0, 50), price: link.amount, quantity: 1 }],
+    transaction_details: { order_id: r.orderId, gross_amount: r.amount },
+    item_details: [{ id: r.item.id.slice(0, 50), name: r.item.name.slice(0, 50), price: r.amount, quantity: 1 }],
     customer_details: {
-      first_name: first.slice(0, 50),
+      first_name: (first ?? "").slice(0, 50),
       last_name: rest.join(" ").slice(0, 50) || undefined,
-      email: link.customerEmail,
-      phone: link.customerPhone,
+      email: r.customer.email,
+      phone: r.customer.phone,
     },
-    callbacks: { finish: finishUrl },
-    // How long the customer has to complete a payment started from this checkout (e.g. a VA transfer).
-    expiry: { unit: "minutes", duration: minutesLeft },
-    custom_field1: link.invoice,
-    custom_field2: linkId,
+    callbacks: { finish: r.finishUrl },
+    expiry: { unit: "minutes", duration: Math.round(r.expiryMinutes) },
+    custom_field1: r.custom?.[0]?.slice(0, 255),
+    custom_field2: r.custom?.[1]?.slice(0, 255),
+    custom_field3: r.custom?.[2]?.slice(0, 255),
   };
 
   const { status, body } = await call(`${snapBase()}/snap/v1/transactions`, {
@@ -135,6 +136,30 @@ export async function createSnap({
   const err = new Error(`Midtrans Snap error ${status}: ${messages.join("; ")}`) as Error & { code?: string };
   if (messages.some((m) => /order_id/i.test(m) && /(taken|digunakan|used)/i.test(m))) err.code = "order_id_taken";
   throw err;
+}
+
+/** Creates a Snap transaction for a signed invoice link. */
+export function createSnap({
+  link,
+  linkId,
+  orderId,
+  finishUrl,
+}: {
+  link: PaymentLink;
+  linkId: string;
+  orderId: string;
+  finishUrl: string;
+}): Promise<{ token: string; redirectUrl: string }> {
+  const minutesLeft = Math.max(60, Math.min(60 * 24 * 7, Math.floor((link.expiresAt * 1000 - Date.now()) / 60_000)));
+  return createSnapTransaction({
+    orderId,
+    amount: link.amount,
+    item: { id: link.invoice, name: link.description },
+    customer: { name: link.customerName, email: link.customerEmail, phone: link.customerPhone },
+    finishUrl,
+    expiryMinutes: minutesLeft,
+    custom: [link.invoice, linkId, "invoice"],
+  });
 }
 
 /**

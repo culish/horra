@@ -41,12 +41,15 @@ Set `NEXT_PUBLIC_SITE_URL` to the real domain in production — canonical URLs, 
 
 ## Routes
 
+Every page exists in four languages under a locale prefix: `/en`, `/id` (Bahasa Indonesia), `/zh` (Simplified Chinese) and `/bn` (Bengali). A path without a prefix (e.g. `/visa-immigration`) is redirected by `src/proxy.ts` to the visitor's language — the `NEXT_LOCALE` cookie set by the language switcher, then the browser's `Accept-Language`, then English. The routes below are shown without the prefix.
+
 | Route                                        | Page                                                    |
 | -------------------------------------------- | ------------------------------------------------------- |
 | `/`                                          | Home                                                    |
 | `/about`                                     | About (company story / leadership marked pending)       |
 | `/business-consulting`                       | Business Consulting overview                            |
-| `/visa-immigration`                          | Visa & Immigration overview (six services, FAQ, form)   |
+| `/visa-immigration`                          | Visa portal: visa catalogue with prices, steps, price table, FAQ, consultation form, service payment |
+| `/visa-immigration/apply?visa=…`             | Four-step online visa application + Midtrans payment    |
 | `/visa-immigration/c1-tourist-visa`          | C1 Tourist Visa information + consultation form         |
 | `/visa-immigration/investor-kitas`           | Investor KITAS (`/investor-kitas` redirects here, 308)  |
 | `/business-setup`                            | PT PMA, Local PT, NIB & OSS, Virtual Office             |
@@ -59,8 +62,9 @@ Set `NEXT_PUBLIC_SITE_URL` to the real domain in production — canonical URLs, 
 | `/api/inquiry`                               | POST endpoint for all inquiry forms                     |
 | `/pay?t=…`                                   | Invoice payment page (Midtrans Snap), not indexed       |
 | `/pay/finish`                                | Return page after redirect-based payment methods        |
-| `/pay/admin`                                 | Staff tool to create payment links                      |
-| `/api/payments/*`                            | Payment links, checkout, Midtrans notification          |
+| `/pay/admin`                                 | Staff tool to create payment links (English only)       |
+| `/pay/online`                                | Pay any quoted service online (amount from quotation)   |
+| `/api/payments/*`                            | Payment links, checkout, visa/service orders, Midtrans notification |
 
 Trading categories: `spices-herbs`, `palm-oil`, `coffee-cocoa` (with product lists from the company profile) and `coconut`, `petrochemical`, `coal-minerals`, `seafood-marine`, `minerals` (no product list in the profile, so these show a "range confirmed on request" state instead of an invented catalogue).
 
@@ -120,9 +124,27 @@ Payload sent to the webhook:
 
 Works with Zapier/Make webhooks, most CRMs, Formspree-style services, or a small email function. A honeypot field filters simple bots. Before launch, add rate limiting (at the hosting/CDN level) and consider a CAPTCHA. Personal data is never logged by the endpoint.
 
+### Translations
+
+Text lives in `src/i18n/messages/{en,id,zh,bn}.ts`. `en.ts` is the reference and defines the `Messages` type, so TypeScript fails the build if another language is missing a key. Keep `{placeholders}` unchanged when translating. Server components read text with `getT()` (`src/i18n/server.ts`); client components use `useI18n()` and receive only the subset picked in `pickClientMessages`. Internal links go through `@/components/ui/Link`, which adds the current locale prefix.
+
+### Visa prices and the Bangladesh discount
+
+Visa prices (IDR, per applicant, standard and optional express) are in `src/content/visa-catalog.ts`. Holders of a Bangladesh passport (nationality `BD`) get `BANGLADESH_DISCOUNT` (5%) off. The price is always recalculated on the server in `/api/payments/order`; the amount shown in the browser is never trusted.
+
 ### Payments → Midtrans
 
-The site publishes no prices, so payment works per invoice: staff agree the amount with the customer, create a **payment link**, and send it by email or WhatsApp. The customer opens it, checks the invoice and pays in the Midtrans Snap window (virtual account, QRIS, e-wallets, cards — whatever is enabled in the Midtrans dashboard).
+There are three ways to pay, all through Midtrans Snap:
+
+- **Visa applications** (`/visa-immigration/apply`): the customer picks a visa from the catalogue, fills in the applicant form and pays the catalogue price. `POST /api/payments/order` with `kind: "visa"` validates the form, recalculates the price (with the Bangladesh discount), forwards the full order to `INQUIRY_WEBHOOK_URL` with `event: "visa.application"`, and opens Snap. Order ids look like `V-c1-…`.
+- **Quoted services** (`/pay/online` and the "Pay online" form on the visa, business setup, trading and travel pages): the customer enters the amount from their quotation. `kind: "service"`, event `"service.payment"`, order ids `S-…`.
+- **Invoice links** (below), created by staff.
+
+Payment status for all three arrives through the same notification endpoint; the event forwarded to `PAYMENT_WEBHOOK_URL` includes `kind` (`visa`, `service` or `invoice`).
+
+#### Invoice links
+
+For invoices, payment works per link: staff agree the amount with the customer, create a **payment link**, and send it by email or WhatsApp. The customer opens it, checks the invoice and pays in the Midtrans Snap window (virtual account, QRIS, e-wallets, cards — whatever is enabled in the Midtrans dashboard).
 
 1. **Staff** open `/pay/admin`, enter the staff key (`PAYMENT_ADMIN_KEY`), invoice number, amount, description and customer, and get a link like `/pay?t=…`. The same is available as an API: `POST /api/payments/links` with `Authorization: Bearer <PAYMENT_ADMIN_KEY>`.
 2. **The link** carries the invoice details signed with `PAYMENT_LINK_SECRET` (HMAC-SHA256). Nothing is stored on the site; any change to the link makes it invalid, and it expires after the chosen number of days (1–30).

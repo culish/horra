@@ -82,3 +82,12 @@ Testimonials, client logos, case studies, awards, certifications, statistics and
 - [ ] Payment methods to enable (VA banks, QRIS, e-wallets, cards) and who pays the fees.
 - [ ] Payment, refund and cancellation terms added to `/terms`.
 - [ ] Where payment notifications go (`PAYMENT_WEBHOOK_URL`) and who reconciles them.
+
+## Visa portal, prices and languages
+
+- [ ] **Visa prices** in `src/content/visa-catalog.ts`. They follow the public prices of an existing Indonesian visa agency, as requested. Where that agency shows a price range, the lower price was used as *standard* and the higher as *express*. Confirm every price, and that Horra wants to offer an express option.
+- [ ] **Bangladesh special discount (5%)** applies to every visa in the catalogue for applicants with a Bangladesh passport. Confirm the rate, and whether it should also apply to quoted services (it currently does not).
+- [ ] Visa names, stay lengths and extension rules in the catalogue are a summary of current rules and must be checked against imigrasi.go.id before launch. Two short codes are labels made up for the site: `C·Art` (artist/performer visa) and `C·TdV` (Titre de Voyage).
+- [ ] What the visa price includes (government fees, service fee) and the **refund policy** if an application cannot be submitted or is refused — add to `/terms`.
+- [ ] Who receives visa orders (`INQUIRY_WEBHOOK_URL`, event `visa.application`) and contacts the applicant for documents within one working day, as the success message promises.
+- [ ] **Translations** (Bahasa Indonesia, Simplified Chinese, Bengali) were written for the site and should be reviewed by a native speaker, especially the legal pages and visa terms.

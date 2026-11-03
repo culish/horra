@@ -1,9 +1,13 @@
 /**
  * Inquiry form schema + validation, shared by the client form and the /api/inquiry route
- * so both sides enforce exactly the same rules.
+ * so both sides enforce exactly the same rules. Labels and messages come from the dictionary
+ * of the visitor's language; option values are stable slugs in every language.
  */
 
-import { getCategory, productNames } from "@/content/trading";
+import type { Messages } from "@/i18n/messages";
+import { en } from "@/i18n/messages/en";
+import { fmt } from "@/lib/fmt";
+import { getCategory, productList } from "@/content/trading";
 import { travelServices } from "@/content/travel";
 
 export type InquiryVariant = "general" | "visa" | "business-setup" | "trading" | "travel";
@@ -28,7 +32,11 @@ export type FieldDef = {
   requiredMessage?: string;
 };
 
-const opt = (labels: string[]): FieldOption[] => labels.map((label) => ({ value: slug(label), label }));
+type FormT = Messages["form"];
+type ProductNames = Messages["trading"]["products"];
+
+const opts = (labels: Record<string, string>): FieldOption[] =>
+  Object.entries(labels).map(([value, label]) => ({ value, label }));
 
 export function slug(s: string) {
   return s
@@ -38,69 +46,44 @@ export function slug(s: string) {
     .replace(/(^-|-$)/g, "");
 }
 
-const nameField: FieldDef = {
-  name: "fullName",
-  label: "Full name",
-  type: "text",
-  required: true,
-  autoComplete: "name",
-  maxLength: 120,
-  half: true,
-};
-const emailField: FieldDef = {
-  name: "email",
-  label: "Email",
-  type: "email",
-  required: true,
-  requiredMessage: "Enter your email address.",
-  autoComplete: "email",
-  maxLength: 200,
-  half: true,
-};
-const phoneField: FieldDef = {
-  name: "phone",
-  label: "Phone or WhatsApp",
-  type: "tel",
-  autoComplete: "tel",
-  hint: "Include your country code.",
-  maxLength: 40,
-  half: true,
-};
-const consentField: FieldDef = {
-  name: "consent",
-  label:
-    "I agree that Horra Prime Group may use these details to respond to my inquiry, as described in the privacy policy.",
-  type: "checkbox",
-  required: true,
-};
+export function getFields(
+  variant: InquiryVariant,
+  context: string | undefined,
+  f: FormT = en.form,
+  products: ProductNames = en.trading.products,
+): FieldDef[] {
+  const L = f.fields;
+  const O = f.options;
+  const nameField: FieldDef = {
+    name: "fullName",
+    label: L.fullName,
+    type: "text",
+    required: true,
+    autoComplete: "name",
+    maxLength: 120,
+    half: true,
+  };
+  const emailField: FieldDef = {
+    name: "email",
+    label: L.email,
+    type: "email",
+    required: true,
+    requiredMessage: L.emailRequired,
+    autoComplete: "email",
+    maxLength: 200,
+    half: true,
+  };
+  const phoneField: FieldDef = {
+    name: "phone",
+    label: L.phone,
+    type: "tel",
+    autoComplete: "tel",
+    hint: L.phoneHint,
+    maxLength: 40,
+    half: true,
+  };
+  const consentField: FieldDef = { name: "consent", label: L.consent, type: "checkbox", required: true };
 
-export const topicOptions = opt([
-  "Visa & Immigration",
-  "Business Setup",
-  "International Trading",
-  "Tours & Travel",
-  "Something else",
-]);
-
-export const visaServiceOptions: FieldOption[] = [
-  { value: "tourist-visa", label: "Tourist Visa (C1)" },
-  { value: "business-visa", label: "Business Visa" },
-  { value: "investor-kitas", label: "Investor KITAS" },
-  { value: "visa-extension", label: "Visa Extension" },
-  { value: "work-visa", label: "Work Visa" },
-  { value: "family-kitas", label: "Family KITAS" },
-  { value: "not-sure", label: "Not sure yet" },
-];
-
-export const setupServiceOptions: FieldOption[] = [
-  { value: "pt-pma", label: "PT PMA Setup" },
-  { value: "local-pt", label: "Local PT Setup" },
-  { value: "nib-oss", label: "NIB & OSS" },
-  { value: "virtual-office", label: "Virtual Office" },
-  { value: "not-sure", label: "Not sure yet" },
-];
-
-export function getFields(variant: InquiryVariant, context?: string): FieldDef[] {
   switch (variant) {
     case "visa":
       return [
@@ -108,50 +91,42 @@ export function getFields(variant: InquiryVariant, context?: string): FieldDef[]
         emailField,
         {
           name: "service",
-          label: "What do you need help with?",
+          label: L.visaService,
           type: "select",
           required: true,
-          options: visaServiceOptions,
+          options: opts(O.visaServices),
           half: true,
         },
         {
           name: "nationality",
-          label: "Nationality",
+          label: L.nationality,
           type: "text",
           required: true,
           autoComplete: "country-name",
-          hint: "As shown on your passport.",
+          hint: L.nationalityHint,
           maxLength: 80,
           half: true,
         },
         {
           name: "purpose",
-          label: "Purpose of your stay",
+          label: L.purpose,
           type: "select",
           required: true,
-          options: opt([
-            "Tourism",
-            "Visiting family or friends",
-            "Attending an exhibition or event",
-            "Business visit (no employment)",
-            "Investment or company setup",
-            "Work",
-            "Something else",
-          ]),
+          options: opts(O.purposes),
           half: true,
         },
         {
           name: "arrival",
-          label: "Planned arrival",
+          label: L.arrival,
           type: "text",
-          hint: "An approximate month is fine.",
+          hint: L.arrivalHint,
           maxLength: 80,
           half: true,
         },
         phoneField,
         {
           name: "message",
-          label: "Anything else we should know?",
+          label: L.anythingElse,
           type: "textarea",
           rows: 4,
           maxLength: 3000,
@@ -165,15 +140,15 @@ export function getFields(variant: InquiryVariant, context?: string): FieldDef[]
         emailField,
         {
           name: "service",
-          label: "Service",
+          label: L.service,
           type: "select",
           required: true,
-          options: setupServiceOptions,
+          options: opts(O.setupServices),
           half: true,
         },
         {
           name: "country",
-          label: "Your country",
+          label: L.yourCountry,
           type: "text",
           autoComplete: "country-name",
           maxLength: 80,
@@ -181,20 +156,20 @@ export function getFields(variant: InquiryVariant, context?: string): FieldDef[]
         },
         {
           name: "objective",
-          label: "What do you want to set up in Indonesia?",
+          label: L.objective,
           type: "textarea",
           required: true,
-          requiredMessage: "Describe what you want to set up.",
+          requiredMessage: L.objectiveRequired,
           rows: 4,
-          hint: "For example: the business activity, who the shareholders will be, and your timeline.",
+          hint: L.objectiveHint,
           maxLength: 3000,
         },
         {
           name: "contactMethod",
-          label: "Preferred contact method",
+          label: L.contactMethod,
           type: "radio",
           required: true,
-          options: opt(["Email", "Phone", "WhatsApp"]),
+          options: opts(O.contactMethods),
         },
         phoneField,
         consentField,
@@ -202,22 +177,25 @@ export function getFields(variant: InquiryVariant, context?: string): FieldDef[]
 
     case "trading": {
       const category = context ? getCategory(context) : undefined;
-      const products = category ? productNames(category) : [];
-      const productField: FieldDef = products.length
+      const items = category ? productList(category) : [];
+      const productField: FieldDef = items.length
         ? {
             name: "product",
-            label: "Product of interest",
+            label: L.product,
             type: "select",
             required: true,
-            options: [...opt(products), { value: "other", label: "Other / not listed" }],
+            options: [
+              ...items.map((p) => ({ value: p.id, label: p.code ? `${products[p.id]} (${p.code})` : products[p.id] })),
+              { value: "other", label: O.otherProduct },
+            ],
             half: true,
           }
         : {
             name: "product",
-            label: "Product of interest",
+            label: L.product,
             type: "text",
             required: true,
-            requiredMessage: "Enter the product you are interested in.",
+            requiredMessage: L.productRequired,
             maxLength: 160,
             half: true,
           };
@@ -225,17 +203,17 @@ export function getFields(variant: InquiryVariant, context?: string): FieldDef[]
         nameField,
         {
           name: "company",
-          label: "Company",
+          label: L.company,
           type: "text",
           required: true,
-          requiredMessage: "Enter your company name.",
+          requiredMessage: L.companyRequired,
           autoComplete: "organization",
           maxLength: 160,
           half: true,
         },
         {
           name: "country",
-          label: "Country",
+          label: L.country,
           type: "text",
           required: true,
           autoComplete: "country-name",
@@ -245,21 +223,21 @@ export function getFields(variant: InquiryVariant, context?: string): FieldDef[]
         productField,
         {
           name: "quantity",
-          label: "Estimated requirement",
+          label: L.quantity,
           type: "text",
-          hint: "For example, volume and frequency.",
+          hint: L.quantityHint,
           maxLength: 160,
           half: true,
         },
         emailField,
         {
           name: "message",
-          label: "Message",
+          label: L.message,
           type: "textarea",
           required: true,
-          requiredMessage: "Enter a message about your requirement.",
+          requiredMessage: L.messageRequired,
           rows: 5,
-          hint: "Specifications, destination port, packing or anything else that matters.",
+          hint: L.messageHint,
           maxLength: 3000,
         },
         phoneField,
@@ -273,44 +251,44 @@ export function getFields(variant: InquiryVariant, context?: string): FieldDef[]
         emailField,
         {
           name: "service",
-          label: "Service",
+          label: L.service,
           type: "select",
           required: true,
           options: [
-            ...travelServices.map((s) => ({ value: s.id, label: s.name })),
-            { value: "combination", label: "A combination of these" },
+            ...travelServices.map((s) => ({ value: s.id, label: O.travelServices[s.id] })),
+            { value: "combination", label: O.travelServices.combination },
           ],
           half: true,
         },
         {
           name: "dates",
-          label: "Travel dates",
+          label: L.dates,
           type: "text",
-          hint: "Approximate is fine.",
+          hint: L.datesHint,
           maxLength: 80,
           half: true,
         },
         {
           name: "travellers",
-          label: "Number of travellers",
+          label: L.travellers,
           type: "text",
           maxLength: 40,
           half: true,
         },
         {
           name: "destination",
-          label: "Destinations",
+          label: L.destination,
           type: "text",
-          hint: "Where in Indonesia would you like to go?",
+          hint: L.destinationHint,
           maxLength: 160,
           half: true,
         },
         {
           name: "message",
-          label: "Tell us about your trip",
+          label: L.trip,
           type: "textarea",
           required: true,
-          requiredMessage: "Tell us a little about your trip.",
+          requiredMessage: L.tripRequired,
           rows: 4,
           maxLength: 3000,
         },
@@ -325,15 +303,15 @@ export function getFields(variant: InquiryVariant, context?: string): FieldDef[]
         emailField,
         {
           name: "topic",
-          label: "Topic",
+          label: L.topic,
           type: "select",
           required: true,
-          options: topicOptions,
+          options: opts(O.topics),
           half: true,
         },
         {
           name: "country",
-          label: "Country",
+          label: L.country,
           type: "text",
           autoComplete: "country-name",
           maxLength: 80,
@@ -341,10 +319,10 @@ export function getFields(variant: InquiryVariant, context?: string): FieldDef[]
         },
         {
           name: "message",
-          label: "How can we help?",
+          label: L.help,
           type: "textarea",
           required: true,
-          requiredMessage: "Tell us how we can help.",
+          requiredMessage: L.helpRequired,
           rows: 5,
           maxLength: 3000,
         },
@@ -359,41 +337,49 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export type InquiryValues = Record<string, string>;
 export type InquiryErrors = Record<string, string>;
 
-export function validateField(field: FieldDef, raw: string | undefined): string | undefined {
+export function validateField(
+  field: FieldDef,
+  raw: string | undefined,
+  v: FormT["validation"] = en.form.validation,
+): string | undefined {
   const value = (raw ?? "").trim();
   const label = field.label.replace(/\?$/, "");
 
   if (field.type === "checkbox") {
-    return field.required && value !== "yes" ? "Please confirm to continue." : undefined;
+    return field.required && value !== "yes" ? v.confirm : undefined;
   }
   if (!value) {
     if (!field.required) return undefined;
     if (field.requiredMessage) return field.requiredMessage;
-    if (field.type === "select" || field.type === "radio") return `Choose an option for “${label}”.`;
-    return `Enter your ${label.toLowerCase()}.`;
+    if (field.type === "select" || field.type === "radio") return fmt(v.choose, { label });
+    return fmt(v.enter, { label: label.toLowerCase() });
   }
   if (field.maxLength && value.length > field.maxLength) {
-    return `Keep this under ${field.maxLength} characters.`;
+    return fmt(v.tooLong, { max: field.maxLength });
   }
   if (field.type === "email" && !EMAIL_RE.test(value)) {
-    return "Enter an email address in the format name@example.com.";
+    return v.email;
   }
   if (field.type === "tel") {
     const digits = value.replace(/\D/g, "");
     if (!/^[+\d\s().-]+$/.test(value) || digits.length < 6 || digits.length > 18) {
-      return "Enter a phone number using digits, spaces and an optional + country code.";
+      return v.phone;
     }
   }
   if ((field.type === "select" || field.type === "radio") && field.options) {
-    if (!field.options.some((o) => o.value === value)) return "Choose one of the listed options.";
+    if (!field.options.some((o) => o.value === value)) return v.listed;
   }
   return undefined;
 }
 
-export function validateInquiry(fields: FieldDef[], values: InquiryValues): InquiryErrors {
+export function validateInquiry(
+  fields: FieldDef[],
+  values: InquiryValues,
+  v: FormT["validation"] = en.form.validation,
+): InquiryErrors {
   const errors: InquiryErrors = {};
   for (const f of fields) {
-    const e = validateField(f, values[f.name]);
+    const e = validateField(f, values[f.name], v);
     if (e) errors[f.name] = e;
   }
   return errors;

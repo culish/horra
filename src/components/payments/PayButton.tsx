@@ -4,75 +4,22 @@ import { useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, Clock, LoaderCircle, Lock } from "lucide-react";
 import { buttonClass } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
-
-type SnapResult = { order_id?: string; transaction_status?: string; status_message?: string };
-type SnapCallbacks = {
-  onSuccess?: (r: SnapResult) => void;
-  onPending?: (r: SnapResult) => void;
-  onError?: (r: SnapResult) => void;
-  onClose?: () => void;
-};
-declare global {
-  interface Window {
-    snap?: { pay: (token: string, callbacks?: SnapCallbacks) => void };
-  }
-}
+import { useI18n } from "@/i18n/client";
+import { loadSnap } from "./snap";
 
 type Status = "idle" | "loading" | "open" | "success" | "pending" | "closed" | "error" | "already_paid" | "expired";
 
-let scriptPromise: Promise<void> | null = null;
-function loadSnap(src: string, clientKey: string) {
-  if (window.snap) return Promise.resolve();
-  scriptPromise ??= new Promise<void>((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = src;
-    s.async = true;
-    s.setAttribute("data-client-key", clientKey);
-    s.onload = () => resolve();
-    s.onerror = () => {
-      scriptPromise = null;
-      s.remove();
-      reject(new Error("snap.js failed to load"));
-    };
-    document.head.appendChild(s);
-  });
-  return scriptPromise;
-}
-
-const messages: Partial<Record<Status, { tone: "ok" | "wait" | "bad"; title: string; body: string }>> = {
-  success: {
-    tone: "ok",
-    title: "Payment received",
-    body: "Thank you. Your payment was successful and our team has been notified. A receipt from Midtrans is sent to your email if you provided one.",
-  },
-  pending: {
-    tone: "wait",
-    title: "Waiting for your payment",
-    body: "Follow the instructions shown (e.g. the virtual account number or QR code) to complete the transfer. We are notified automatically once it arrives.",
-  },
-  closed: {
-    tone: "wait",
-    title: "Payment not completed",
-    body: "The payment window was closed before the payment finished. You can start again whenever you are ready.",
-  },
-  error: {
-    tone: "bad",
-    title: "The payment could not be started",
-    body: "Nothing was charged. Please try again in a moment, or contact us and we will help.",
-  },
-  already_paid: {
-    tone: "ok",
-    title: "This invoice is already paid",
-    body: "Our records show this payment link has been paid. No further payment is needed.",
-  },
-  expired: {
-    tone: "bad",
-    title: "This payment link has expired",
-    body: "Please contact us for a new link.",
-  },
-};
-
 export function PayButton({ token, clientKey, scriptUrl }: { token: string; clientKey: string; scriptUrl: string }) {
+  const { t } = useI18n();
+  const b = t.pay.button;
+  const messages: Partial<Record<Status, { tone: "ok" | "wait" | "bad"; title: string; body: string }>> = {
+    success: { tone: "ok", ...b.success },
+    pending: { tone: "wait", ...b.pending },
+    closed: { tone: "wait", ...b.closed },
+    error: { tone: "bad", ...b.error },
+    already_paid: { tone: "ok", ...b.alreadyPaid },
+    expired: { tone: "bad", ...b.expired },
+  };
   const [status, setStatus] = useState<Status>("idle");
   const liveRef = useRef<HTMLDivElement>(null);
   const busy = status === "loading" || status === "open";
@@ -86,7 +33,7 @@ export function PayButton({ token, clientKey, scriptUrl }: { token: string; clie
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
         }),
-        loadSnap(scriptUrl, clientKey),
+        loadSnap({ scriptUrl, clientKey, sandbox: false }),
       ]);
       const data = (await res.json()) as { ok: boolean; token?: string; reason?: string };
       if (!data.ok || !data.token || !window.snap) {
@@ -145,12 +92,12 @@ export function PayButton({ token, clientKey, scriptUrl }: { token: string; clie
           {busy ? (
             <>
               <LoaderCircle aria-hidden className="size-5 animate-spin" />
-              {status === "open" ? "Payment window open…" : "Preparing secure payment…"}
+              {status === "open" ? b.open : b.preparing}
             </>
           ) : (
             <>
               <Lock aria-hidden className="size-4" />
-              {status === "pending" || status === "closed" || status === "error" ? "Pay again" : "Pay now"}
+              {status === "pending" || status === "closed" || status === "error" ? b.payAgain : b.payNow}
             </>
           )}
         </button>

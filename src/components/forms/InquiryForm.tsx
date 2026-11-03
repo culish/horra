@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/ui/Link";
 import { useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { AlertCircle, CheckCircle2, Info, LoaderCircle } from "lucide-react";
 import {
@@ -14,16 +14,9 @@ import {
 } from "@/lib/inquiry";
 import { buttonClass } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
+import { useI18n, fmt } from "@/i18n/client";
 
 type Status = "idle" | "submitting" | "sent" | "demo" | "error";
-
-const submitLabels: Record<InquiryVariant, string> = {
-  general: "Send inquiry",
-  visa: "Request a consultation",
-  "business-setup": "Request a consultation",
-  trading: "Send product inquiry",
-  travel: "Send travel request",
-};
 
 const inputBase =
   "w-full rounded-[3px] border bg-white px-3.5 text-[1rem] text-charcoal transition-colors placeholder:text-stone/70 focus:border-forest";
@@ -54,7 +47,9 @@ export function InquiryForm({
   defaults?: Record<string, string>;
   className?: string;
 }) {
-  const fields = useMemo(() => getFields(variant, context), [variant, context]);
+  const { t, locale } = useI18n();
+  const f = t.form;
+  const fields = useMemo(() => getFields(variant, context, t.form, t.products), [variant, context, t]);
   const uid = useId().replace(/:/g, "");
   const formRef = useRef<HTMLFormElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -97,7 +92,7 @@ export function InquiryForm({
     const field = fields.find((f) => f.name === target.name);
     if (!field || !errors[field.name]) return;
     const value = target.type === "checkbox" ? (target.checked ? "yes" : "") : target.value;
-    const message = validateField(field, value);
+    const message = validateField(field, value, f.validation);
     setErrors((prev) => {
       const next = { ...prev };
       if (message) next[field.name] = message;
@@ -110,7 +105,7 @@ export function InquiryForm({
     e.preventDefault();
     if (status === "submitting") return;
     const values = readValues();
-    const found = validateInquiry(fields, values);
+    const found = validateInquiry(fields, values, f.validation);
     setErrors(found);
     if (Object.keys(found).length) {
       setStatus("idle");
@@ -128,6 +123,7 @@ export function InquiryForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          locale,
           variant,
           context,
           values,
@@ -174,7 +170,7 @@ export function InquiryForm({
         onSubmit={onSubmit}
         onChange={onChange}
         data-inquiry-form={variant}
-        aria-label={title ?? "Inquiry form"}
+        aria-label={title ?? f.ariaLabel}
         className={cn(title || intro ? "mt-8" : "")}
       >
         {showSummary && errorList.length > 0 && (
@@ -186,15 +182,15 @@ export function InquiryForm({
           >
             <p className="flex items-center gap-2 font-semibold text-[#912018]">
               <AlertCircle aria-hidden className="size-5" />
-              {errorList.length === 1 ? "Check 1 field" : `Check ${errorList.length} fields`}
+              {errorList.length === 1 ? f.checkOne : fmt(f.checkMany, { count: errorList.length })}
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-7 text-[0.9375rem] text-[#912018]">
-              {errorList.map((f) => (
-                <li key={f.name}>
-                  <a href={`#${fieldId(f.name)}`} className="underline underline-offset-2">
-                    {f.type === "checkbox" ? "Privacy consent" : f.label.replace(/\?$/, "")}
+              {errorList.map((field) => (
+                <li key={field.name}>
+                  <a href={`#${fieldId(field.name)}`} className="underline underline-offset-2">
+                    {field.type === "checkbox" ? f.privacyConsent : field.label.replace(/\?$/, "")}
                   </a>
-                  : {errors[f.name]}
+                  : {errors[field.name]}
                 </li>
               ))}
             </ul>
@@ -202,13 +198,13 @@ export function InquiryForm({
         )}
 
         <div className="grid gap-x-6 gap-y-6 sm:grid-cols-2">
-          {fields.map((f) => (
+          {fields.map((field) => (
             <Field
-              key={f.name}
-              field={f}
-              id={fieldId(f.name)}
-              error={errors[f.name]}
-              defaultValue={defaults?.[f.name]}
+              key={field.name}
+              field={field}
+              id={fieldId(field.name)}
+              error={errors[field.name]}
+              defaultValue={defaults?.[field.name]}
             />
           ))}
         </div>
@@ -216,18 +212,18 @@ export function InquiryForm({
         {/* Honeypot: hidden from people and assistive tech; bots tend to fill it in */}
         <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
           <label>
-            Website
+            {f.honeypot}
             <input type="text" name="website" tabIndex={-1} autoComplete="off" />
           </label>
         </div>
 
         <div className="mt-8 flex flex-col gap-5 border-t border-navy/10 pt-8 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-[26rem] text-sm leading-relaxed text-stone">
-            We use your details only to respond to this inquiry. See our{" "}
+            {f.privacyBefore}{" "}
             <Link href="/privacy-policy" className="text-forest underline underline-offset-2">
-              privacy policy
+              {f.privacyLink}
             </Link>
-            .
+            {f.privacyAfter}
           </p>
           <button
             type="submit"
@@ -235,25 +231,24 @@ export function InquiryForm({
             className={buttonClass("primary", "shrink-0 disabled:cursor-wait disabled:opacity-70")}
           >
             {status === "submitting" && <LoaderCircle aria-hidden className="size-4 animate-spin" />}
-            {status === "submitting" ? "Sending…" : submitLabels[variant]}
+            {status === "submitting" ? f.sending : f.submit[variant]}
           </button>
         </div>
 
         <div ref={resultRef} tabIndex={-1} role="status" aria-live="polite" className="focus:outline-none">
           {status === "sent" && (
-            <ResultPanel tone="success" title="Inquiry sent">
-              Thank you. We will reply to {replyTo || "the email address you provided"}.
+            <ResultPanel tone="success" title={f.sentTitle}>
+              {fmt(f.sentText, { email: replyTo || f.sentFallback })}
             </ResultPanel>
           )}
           {status === "demo" && (
-            <ResultPanel tone="info" title="Demo mode: your inquiry was not sent">
-              Your details passed validation, but inquiry delivery is not connected yet, so nothing was sent or stored.
-              Site owner: connect the inquiry endpoint (INQUIRY_WEBHOOK_URL — see README) before launch.
+            <ResultPanel tone="info" title={f.demoTitle}>
+              {f.demoText}
             </ResultPanel>
           )}
           {status === "error" && (
-            <ResultPanel tone="error" title="Your inquiry couldn’t be sent">
-              Check your connection and try again. Your details are still in the form.
+            <ResultPanel tone="error" title={f.errorTitle}>
+              {f.errorText}
             </ResultPanel>
           )}
         </div>
@@ -299,6 +294,7 @@ function Field({
   error?: string;
   defaultValue?: string;
 }) {
+  const { t } = useI18n();
   const hintId = f.hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
@@ -308,7 +304,7 @@ function Field({
   const label = (
     <>
       {f.label}
-      {!f.required && <span className="font-normal text-stone"> (optional)</span>}
+      {!f.required && <span className="font-normal text-stone"> {t.common.optional}</span>}
     </>
   );
 
@@ -406,7 +402,7 @@ function Field({
             className={cn(inputBase, border, "select-chevron h-12 appearance-none pr-10")}
           >
             <option value="" disabled>
-              Select an option
+              {t.form.selectOption}
             </option>
             {f.options!.map((o) => (
               <option key={o.value} value={o.value}>

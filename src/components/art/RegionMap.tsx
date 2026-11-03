@@ -15,9 +15,9 @@ const regions = {
 };
 
 export const regionTones: Record<DivisionKey, { bg: string; land: string; neighbors: string }> = {
-  consulting: { bg: "bg-navy", land: "rgb(169 180 194 / 0.7)", neighbors: "rgb(247 245 240 / 0.14)" },
-  trading: { bg: "bg-forest", land: "rgb(247 245 240 / 0.55)", neighbors: "rgb(247 245 240 / 0.16)" },
-  travel: { bg: "bg-sand", land: "rgb(16 36 58 / 0.55)", neighbors: "rgb(16 36 58 / 0.14)" },
+  consulting: { bg: "bg-navy", land: "rgb(195 208 240 / 0.7)", neighbors: "rgb(246 248 252 / 0.14)" },
+  trading: { bg: "bg-forest", land: "rgb(246 248 252 / 0.55)", neighbors: "rgb(246 248 252 / 0.16)" },
+  travel: { bg: "bg-sand", land: "rgb(21 43 129 / 0.5)", neighbors: "rgb(21 43 129 / 0.14)" },
 };
 
 export function RegionMap({

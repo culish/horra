@@ -2,24 +2,25 @@
 
 /*
  * Design tokens — PT. Horra Prime Group
- * Navy + ivory are the foundation. Forest green signals trade and nature.
- * Gold is an accent only: use it on navy surfaces or as lines/fills, never as body text on ivory
- * (use gold-ink for that — 5.2:1 on sand).
+ * Royal blue from the HR shield logo (#152B81) is the foundation, on cool white surfaces.
+ * "forest" is kept as the token name for the secondary/action blue so existing classes still work.
+ * Sky blue (#38B6FF, from the travel logo) is an accent only: use it on dark blue surfaces or as
+ * lines/fills, never as body text on light surfaces (use gold-ink for that).
  */
 @theme {
-  --color-navy: #10243a;
-  --color-navy-deep: #0b1b2c;
-  --color-navy-soft: #1a3350;
-  --color-forest: #176b55;
-  --color-forest-deep: #11523f;
-  --color-ivory: #f7f5f0;
-  --color-sand: #efebe2;
-  --color-charcoal: #222b35;
-  --color-ink-soft: #4a5463;
-  --color-stone: #5e6676; /* brief: #667085, darkened slightly to pass AA on sand */
-  --color-gold: #c6a56b;
-  --color-gold-ink: #7a5c2a;
-  --color-mist: #a9b4c2;
+  --color-navy: #152b81;
+  --color-navy-deep: #0e1d5c;
+  --color-navy-soft: #22399c;
+  --color-forest: #1a56c4;
+  --color-forest-deep: #133f94;
+  --color-ivory: #f6f8fc;
+  --color-sand: #eaf0fa;
+  --color-charcoal: #1b2340;
+  --color-ink-soft: #46506b;
+  --color-stone: #5c6b8a;
+  --color-gold: #38b6ff;
+  --color-gold-ink: #0a5a94;
+  --color-mist: #c3d0f0;
 
   --text-display: clamp(2.5rem, 1.6rem + 3.9vw, 4.75rem);
   --text-display--line-height: 1.04;
@@ -66,7 +67,9 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans:
+    var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans SC", "Noto Sans Bengali", "Hind Siliguri", Vrinda, sans-serif;
 }
 
 @layer base {
@@ -146,7 +149,8 @@
     line-height: 1.7;
     color: var(--color-ink-soft);
   }
-  .prose-body > * + * {
+  .prose-body > * + *,
+  .prose-body section > * + * {
     margin-top: 1.1em;
   }
   .prose-body h2 {
