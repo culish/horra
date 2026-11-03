@@ -2,7 +2,7 @@
 
 Corporate website for PT. Horra Prime Group: Business Consulting (Visa & Immigration, Business Setup), International Trading (eight commodity categories) and Tours & Travel.
 
-Built with **Next.js 16 (App Router, TypeScript)**, **Tailwind CSS 4** and **lucide-react** icons. Every page is statically prerendered; the only server code is the inquiry endpoint.
+Built with **Next.js 16 (App Router, TypeScript)**, **Tailwind CSS 4** and **lucide-react** icons. Every page is statically prerendered; the server code is the inquiry endpoint and the payment endpoints.
 
 > Before launch, work through [`CONTENT-TO-CONFIRM.md`](./CONTENT-TO-CONFIRM.md). The site deliberately shows "To be confirmed" placeholders and draft legal pages until real company details are supplied.
 
@@ -55,6 +55,10 @@ Set `NEXT_PUBLIC_SITE_URL` to the real domain in production — canonical URLs, 
 | `/privacy-policy`, `/terms`                  | Draft legal pages, clearly marked for review            |
 | `/sitemap.xml`, `/robots.txt`                | Generated from `NEXT_PUBLIC_SITE_URL`                   |
 | `/api/inquiry`                               | POST endpoint for all inquiry forms                     |
+| `/pay?t=…`                                   | Invoice payment page (Midtrans Snap), not indexed       |
+| `/pay/finish`                                | Return page after redirect-based payment methods        |
+| `/pay/admin`                                 | Staff tool to create payment links                      |
+| `/api/payments/*`                            | Payment links, checkout, Midtrans notification          |
 
 Trading categories: `spices-herbs`, `palm-oil`, `coffee-cocoa` (with product lists from the company profile) and `coconut`, `petrochemical`, `coal-minerals`, `seafood-marine`, `minerals` (no product list in the profile, so these show a "range confirmed on request" state instead of an invented catalogue).
 
@@ -79,6 +83,12 @@ All variables are optional; see [`.env.example`](./.env.example).
 | `NEXT_PUBLIC_SOCIAL_*`            | `LINKEDIN`, `INSTAGRAM`, `FACEBOOK`, `YOUTUBE` — only filled-in profiles are shown        |
 | `INQUIRY_WEBHOOK_URL`             | **Server only.** Where inquiries are delivered (see below)                               |
 | `INQUIRY_WEBHOOK_TOKEN`           | **Server only.** Optional bearer token for the webhook                                   |
+| `MIDTRANS_SERVER_KEY`             | **Server only.** Midtrans server key (sandbox or production)                             |
+| `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY` | Midtrans client key, used by the Snap payment window                                     |
+| `MIDTRANS_IS_PRODUCTION`          | `true` for live payments; otherwise the Midtrans sandbox is used                         |
+| `PAYMENT_LINK_SECRET`             | **Server only.** 32+ character secret that signs payment links                           |
+| `PAYMENT_ADMIN_KEY`               | **Server only.** Staff key for creating payment links at `/pay/admin`                    |
+| `PAYMENT_WEBHOOK_URL` / `_TOKEN`  | **Server only.** Where payment status updates are forwarded                              |
 
 `NEXT_PUBLIC_*` values are inlined at build time — rebuild after changing them.
 
@@ -107,6 +117,36 @@ Payload sent to the webhook:
 ```
 
 Works with Zapier/Make webhooks, most CRMs, Formspree-style services, or a small email function. A honeypot field filters simple bots. Before launch, add rate limiting (at the hosting/CDN level) and consider a CAPTCHA. Personal data is never logged by the endpoint.
+
+### Payments → Midtrans
+
+The site publishes no prices, so payment works per invoice: staff agree the amount with the customer, create a **payment link**, and send it by email or WhatsApp. The customer opens it, checks the invoice and pays in the Midtrans Snap window (virtual account, QRIS, e-wallets, cards — whatever is enabled in the Midtrans dashboard).
+
+1. **Staff** open `/pay/admin`, enter the staff key (`PAYMENT_ADMIN_KEY`), invoice number, amount, description and customer, and get a link like `/pay?t=…`. The same is available as an API: `POST /api/payments/links` with `Authorization: Bearer <PAYMENT_ADMIN_KEY>`.
+2. **The link** carries the invoice details signed with `PAYMENT_LINK_SECRET` (HMAC-SHA256). Nothing is stored on the site; any change to the link makes it invalid, and it expires after the chosen number of days (1–30).
+3. **Checkout** (`POST /api/payments/checkout`) re-verifies the link, refuses if Midtrans already shows it as paid, then creates a Snap transaction for the signed amount. Order ids are `<invoice>-<link id>`; a retry after an expired or abandoned attempt gets a suffix.
+4. **Notification:** in the Midtrans dashboard set the *Payment Notification URL* to `https://<domain>/api/payments/midtrans/notification` and the *Finish Redirect URL* to `https://<domain>/pay/finish`. The endpoint checks `signature_key`, re-reads the transaction from Midtrans, and forwards this to `PAYMENT_WEBHOOK_URL`:
+
+```json
+{
+  "source": "horra-prime-group-website",
+  "event": "payment.status",
+  "provider": "midtrans",
+  "invoice": "INV-2026-0012",
+  "orderId": "INV-2026-0012-d4d812a4",
+  "status": "settlement",
+  "paid": true,
+  "amount": 3500000,
+  "currency": "IDR",
+  "paymentType": "bank_transfer",
+  "transactionId": "…",
+  "settlementTime": "2026-11-03 15:02:11"
+}
+```
+
+Without `PAYMENT_WEBHOOK_URL` the notification is still accepted and the payment is visible in the Midtrans dashboard. Without the Midtrans keys, the payment page shows the invoice and asks the customer to contact the company instead.
+
+**Going live:** test end to end with sandbox keys first (Midtrans provides test cards and a VA simulator), then switch to production keys and `MIDTRANS_IS_PRODUCTION=true` once Midtrans has approved the account. Because there is no database, a link opened in two attempts could in rare cases be paid twice (e.g. two VA numbers issued and both paid); keep link validity short and reconcile against the Midtrans dashboard. Add payment terms (refunds, cancellation) to `/terms` before launch.
 
 ### Contact details and social links
 
